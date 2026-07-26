@@ -1,6 +1,6 @@
 /* timwin PWA service worker - cache do shell para instalar e abrir offline.
    Nao cacheia o webhook do Make (a resposta e sempre dinamica). */
-var CACHE = "timwin-v2";
+var CACHE = "timwin-v3";
 var SHELL = [
   "./",
   "./index.html",
