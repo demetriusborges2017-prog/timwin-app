@@ -1,0 +1,17 @@
+{
+  "name": "timwin - Assistente de Ligacoes",
+  "short_name": "timwin",
+  "description": "Assistente de ligacoes da JPH (Automacao Industrial): tira duvidas sobre Primeira Ligacao e Retomada.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#104e78",
+  "theme_color": "#104e78",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

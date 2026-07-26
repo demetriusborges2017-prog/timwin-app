@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>timwin</title>
+<meta name="theme-color" content="#104e78" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="timwin" />
+<meta name="mobile-web-app-capable" content="yes" />
+<style>
+  :root{
+    --brand:#104e78; --brand-2:#1e6ea5; --bg:#f4f6f8; --card:#ffffff;
+    --ink:#12212e; --muted:#68788a; --line:#e4e9ee; --user:#104e78; --botbg:#ffffff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink);
+    display:flex; flex-direction:column; height:100dvh; overflow:hidden;
+  }
+  header{
+    background:var(--brand); color:#fff; padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+    display:flex; flex-direction:column; gap:10px; box-shadow:0 1px 0 rgba(0,0,0,.06);
+  }
+  .top{display:flex; align-items:center; gap:11px}
+  .logo{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.16);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
+  .title h1{margin:0;font-size:17px;font-weight:600;line-height:1.1}
+  .title p{margin:2px 0 0;font-size:12px;opacity:.82}
+  .seg{display:flex;gap:6px;background:rgba(255,255,255,.14);padding:4px;border-radius:11px}
+  .seg button{
+    flex:1;border:0;background:transparent;color:#fff;opacity:.8;font-size:13px;
+    padding:7px 6px;border-radius:8px;cursor:pointer;font-weight:500;transition:.15s
+  }
+  .seg button.on{background:#fff;color:var(--brand);opacity:1}
+  #thread{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:10px}
+  .row{display:flex}
+  .row.me{justify-content:flex-end}
+  .bubble{max-width:86%;font-size:14.5px;line-height:1.5;padding:10px 13px;border-radius:15px;
+    word-wrap:break-word;white-space:normal}
+  .row.bot .bubble{background:var(--botbg);border:1px solid var(--line);border-bottom-left-radius:5px}
+  .row.me .bubble{background:var(--user);color:#fff;border-bottom-right-radius:5px}
+  .bubble strong{font-weight:600}
+  .hint{color:var(--muted);font-size:13px;text-align:center;margin:auto 0;padding:0 24px;line-height:1.6}
+  .typing{display:inline-flex;gap:7px;align-items:center;padding:11px 14px;color:var(--muted);font-size:13.5px}
+  .dots{display:inline-flex;gap:4px}
+  .dots i{width:7px;height:7px;border-radius:50%;background:#b6c2cd;display:inline-block;animation:b 1s infinite}
+  .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+  @keyframes b{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  .starters{display:flex;gap:7px;overflow-x:auto;padding:8px 14px;border-top:1px solid var(--line);background:var(--card)}
+  .starters button{white-space:nowrap;border:1px solid var(--line);background:#fff;color:var(--brand);
+    font-size:12.5px;padding:7px 12px;border-radius:16px;cursor:pointer;font-weight:500}
+  .composer{display:flex;gap:9px;align-items:flex-end;padding:10px 12px 6px;
+    background:var(--card);border-top:1px solid var(--line)}
+  textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:20px;padding:10px 14px;
+    font:inherit;font-size:15px;max-height:120px;outline:none;background:#fff;line-height:1.35}
+  textarea:focus{border-color:var(--brand-2)}
+  .send{width:42px;height:42px;flex:0 0 42px;border:0;border-radius:50%;background:var(--brand);color:#fff;
+    font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .send:disabled{opacity:.45}
+  footer{background:var(--card);text-align:center;color:var(--muted);font-size:11px;
+    padding:0 0 calc(env(safe-area-inset-bottom) + 8px)}
+</style>
+</head>
+<body>
+  <header>
+    <div class="top">
+      <div class="logo">t</div>
+      <div class="title">
+        <h1>timwin</h1>
+        <p>Assistente de ligacoes | Automacao Industrial</p>
+      </div>
+    </div>
+    <div class="seg" id="seg">
+      <button data-tipo="primeira" class="on">Primeira Ligacao</button>
+      <button data-tipo="retomada">Retomada</button>
+      <button data-tipo="livre">Livre</button>
+    </div>
+  </header>
+
+  <div id="thread">
+    <div class="hint" id="hint">Escolha o tipo de ligacao acima e faca sua pergunta.<br>Toque num atalho ou escreva abaixo.</div>
+  </div>
+
+  <div class="starters" id="starters"></div>
+
+  <div class="composer">
+    <textarea id="input" rows="1" placeholder="Escreva sua duvida..." autocomplete="off"></textarea>
+    <button class="send" id="send" aria-label="Enviar">&#8593;</button>
+  </div>
+  <footer id="footer"></footer>
+
+<script src="config.js"></script>
+<script>
+  var C = window.CONFIG || {};
+  var WEBHOOK = C.WEBHOOK || "";
+  var DISCIPLINA = C.DISCIPLINA || "automacao-industrial";
+  var TIMEOUT_MS = C.TIMEOUT_MS || 40000;
+  var tipo = "primeira";
+  var busy = false;
+
+  var thread = document.getElementById("thread");
+  var hint = document.getElementById("hint");
+  var input = document.getElementById("input");
+  var sendBtn = document.getElementById("send");
+  document.getElementById("footer").textContent = (C.APP_NAME || "timwin") + " v" + (C.APP_VERSION || "0.0.0");
+
+  var STARTERS = [
+    "Como eu abro a ligacao?",
+    "Como lidar com objecao?",
+    "Como nao parecer vendedor?",
+    "E se pedir para mandar por e-mail?"
+  ];
+  var startersEl = document.getElementById("starters");
+  STARTERS.forEach(function(s){
+    var b = document.createElement("button");
+    b.textContent = s;
+    b.onclick = function(){ if(!busy) send(s); };
+    startersEl.appendChild(b);
+  });
+
+  document.getElementById("seg").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    tipo = b.getAttribute("data-tipo");
+    Array.prototype.forEach.call(this.children, function(c){ c.classList.remove("on"); });
+    b.classList.add("on");
+  });
+
+  function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function fmt(s){
+    return esc(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n/g,"<br>");
+  }
+
+  function addBubble(text, who, isHtml){
+    if(hint){ hint.remove(); hint = null; }
+    var row = document.createElement("div");
+    row.className = "row " + who;
+    var b = document.createElement("div");
+    b.className = "bubble";
+    if(isHtml){ b.innerHTML = text; } else { b.textContent = text; }
+    row.appendChild(b);
+    thread.appendChild(row);
+    thread.scrollTop = thread.scrollHeight;
+    return row;
+  }
+
+  function thinkingRow(){
+    var row = document.createElement("div");
+    row.className = "row bot";
+    row.innerHTML = '<div class="bubble typing">Pensando<span class="dots"><i></i><i></i><i></i></span></div>';
+    thread.appendChild(row);
+    thread.scrollTop = thread.scrollHeight;
+    return row;
+  }
+
+  function autoGrow(){ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,120)+"px"; }
+  input.addEventListener("input", autoGrow);
+  input.addEventListener("keydown", function(e){
+    if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); trySend(); }
+  });
+  sendBtn.addEventListener("click", trySend);
+  function trySend(){ var t=input.value.trim(); if(t) send(t); }
+
+  function send(text){
+    if(busy) return;
+    if(!WEBHOOK){ addBubble("Configuracao ausente: defina o WEBHOOK no config.js.", "bot", false); return; }
+    busy = true; sendBtn.disabled = true;
+    addBubble(text, "me", false);
+    input.value=""; autoGrow();
+    var t = thinkingRow();
+
+    var ctrl = new AbortController();
+    var timedOut = false;
+    var timer = setTimeout(function(){ timedOut = true; ctrl.abort(); }, TIMEOUT_MS);
+
+    var url = WEBHOOK + "?pergunta=" + encodeURIComponent(text)
+            + "&tipo=" + encodeURIComponent(tipo)
+            + "&disciplina=" + encodeURIComponent(DISCIPLINA);
+
+    fetch(url, { method:"GET", cache:"no-store", signal:ctrl.signal })
+      .then(function(r){ return r.text(); })
+      .then(function(txt){
+        t.remove();
+        var out = (txt && txt.trim() && txt.trim()!=="Accepted") ? txt.trim()
+                  : "Nao consegui responder agora. Tenta de novo em instantes.";
+        addBubble(fmt(out), "bot", true);
+      })
+      .catch(function(){
+        t.remove();
+        if(timedOut){
+          addBubble("O timwin demorou para responder. Tente novamente em alguns instantes.", "bot", false);
+        } else {
+          addBubble("Falha de conexao. Verifica a internet e tenta de novo.", "bot", false);
+        }
+      })
+      .finally(function(){ clearTimeout(timer); busy=false; sendBtn.disabled=false; input.focus(); });
+  }
+
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
+  }
+</script>
+</body>
+</html>
