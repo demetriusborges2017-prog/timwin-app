@@ -155,8 +155,8 @@
         <div class="segwrap">
           <span class="seglabel">Tipo</span>
           <div class="seg" id="seg">
-            <button data-tipo="primeira">Primeira Ligação</button>
-            <button data-tipo="retomada">Retomada</button>
+            <button data-tipo="primeira" data-acao="primeira-ligacao">Primeira Ligação</button>
+            <button data-tipo="retomada" data-acao="ligacao-de-retomada">Retomada</button>
           </div>
         </div>
       </div>
@@ -220,6 +220,7 @@
   var DISCIPLINA = C.DISCIPLINA || "automacao-industrial";
   var TIMEOUT_MS = C.TIMEOUT_MS || 40000;
   var tipo = null;
+  var acao = null;
   var started = false;
   var busy = false;
 
@@ -251,6 +252,7 @@
   segEl.addEventListener("click", function(e){
     var b = e.target.closest("button"); if(!b) return;
     tipo = b.getAttribute("data-tipo");
+    acao = b.getAttribute("data-acao");
     Array.prototype.forEach.call(this.children, function(c){ c.classList.remove("on"); });
     b.classList.add("on");
     segEl.classList.remove("need");
@@ -332,6 +334,7 @@
 
     var url = WEBHOOK + "?pergunta=" + encodeURIComponent(text)
             + "&tipo=" + encodeURIComponent(tipo)
+            + "&acao=" + encodeURIComponent(acao)
             + "&disciplina=" + encodeURIComponent(DISCIPLINA);
 
     fetch(url, { method:"GET", cache:"no-store", signal:ctrl.signal })
@@ -366,3 +369,109 @@
 </script>
 </body>
 </html>
+
+{
+  "name": "timwin - Assistente Comercial Inteligente",
+  "short_name": "timwin",
+  "description": "Assistente comercial da JPH (Automação Industrial): tira dúvidas sobre Primeira Ligação e Retomada.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10283e",
+  "theme_color": "#10283e",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
+
+# timwin PWA
+
+Interface (a "cara") do timwin: chat mobile-first que fala com o cerebro no Make.
+Nao tem regra de negocio; so coleta a pergunta, chama o webhook e mostra a resposta.
+
+## Arquivos
+- `index.html` - a pagina (UI + logica de chamar o webhook).
+- `config.js` - UNICO lugar de configuracao (ver abaixo).
+- `manifest.json` - metadados de app (nome, icones, cor).
+- `sw.js` - service worker (torna instalavel e abre o shell offline).
+- `icons/` - icones do app.
+
+## Configuracao (config.js)
+Todas as configuracoes ficam em `config.js`. Nao ha `.env`: isto e um site estatico,
+sem build que leia variaveis de ambiente. Campos:
+
+| Campo         | O que e                                              |
+|---------------|------------------------------------------------------|
+| `WEBHOOK`     | URL do webhook do Make (o cerebro).                  |
+| `DISCIPLINA`  | disciplina da base carregada (hoje automacao-industrial). |
+| `APP_NAME`    | nome exibido.                                        |
+| `APP_VERSION` | versao (aparece no rodape).                          |
+| `TIMEOUT_MS`  | tempo maximo de espera pela resposta (ms).           |
+
+Regra: nunca colocar segredos (chaves de API) aqui. Isto e front-end e fica visivel
+no navegador. O fechamento do acesso e a camada de token de usuario (LEIAME secao 9).
+
+## Publicar (GitHub Pages)
+1. Criar um repositorio PUBLICO (ex.: `timwin-app`). Nao usar o repo privado da base.
+2. Subir o conteudo desta pasta na RAIZ do repo (index.html na raiz + a pasta icons).
+3. Settings > Pages > Source: branch `main` / root.
+4. Endereco: `https://<usuario>.github.io/timwin-app/`.
+5. Opcional (subdominio proprio): Settings > Pages > Custom domain = `timwin.simplesfeito.com.br`
+   e, no DNS do dominio, um CNAME `timwin` -> `<usuario>.github.io`.
+
+## CORS (fazer no lancamento)
+Hoje o webhook devolve `Access-Control-Allow-Origin: *` para permitir teste de
+qualquer origem. Quando o dominio final estiver fixo, apertar para exatamente aquela
+origem (ex.: `https://timwin.simplesfeito.com.br`) no modulo WebhookRespond do Make.
+
+## Versao
+0.1.0
+
+/* timwin PWA service worker - cache do shell para instalar e abrir offline.
+   Nao cacheia o webhook do Make (a resposta e sempre dinamica). */
+var CACHE = "timwin-v8";
+var SHELL = [
+  "./",
+  "./index.html",
+  "./config.js",
+  "./manifest.json",
+  "./favicon.ico",
+  "./favicon-32x32.png",
+  "./favicon-16x16.png",
+  "./apple-touch-icon.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png",
+  "./icons/apple-touch-icon.png"
+];
+
+self.addEventListener("install", function(e){
+  e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(SHELL); }).then(function(){ return self.skipWaiting(); }));
+});
+
+self.addEventListener("activate", function(e){
+  e.waitUntil(
+    caches.keys().then(function(keys){
+      return Promise.all(keys.filter(function(k){ return k!==CACHE; }).map(function(k){ return caches.delete(k); }));
+    }).then(function(){ return self.clients.claim(); })
+  );
+});
+
+self.addEventListener("fetch", function(e){
+  var url = e.request.url;
+  /* nunca intercepta a chamada ao Make (webhook) */
+  if(url.indexOf("hook.") !== -1 || url.indexOf("make.com") !== -1){ return; }
+  /* so trata GET do proprio app */
+  if(e.request.method !== "GET"){ return; }
+  e.respondWith(
+    caches.match(e.request).then(function(hit){
+      return hit || fetch(e.request).then(function(res){
+        return res;
+      }).catch(function(){ return caches.match("./index.html"); });
+    })
+  );
+});
