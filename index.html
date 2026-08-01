@@ -47,15 +47,12 @@
   .discbadge .dot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
 
   main{flex:1; overflow-y:auto; padding:18px 16px}
-  .toolbar{margin-bottom:14px}
-  .segwrap{display:flex;align-items:center;gap:9px}
-  .seglabel{font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-  .seg{display:flex;gap:6px;background:#e2e8ef;padding:5px;border-radius:12px;flex:1}
-  .seg button{flex:1;border:0;background:transparent;color:var(--muted);font-size:13px;
-    padding:8px 6px;border-radius:8px;cursor:pointer;font-weight:600;transition:.15s}
-  .seg button.on{background:var(--navy);color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12)}
-  .seg.need{animation:pulse 1.1s ease 2}
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(190,121,49,0)}50%{box-shadow:0 0 0 4px rgba(190,121,49,.35)}}
+  .toolbar{margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:30px}
+  .acaobadge{display:none; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--navy);
+    background:#fff; border:1px solid var(--line); padding:6px 12px; border-radius:20px}
+  .acaobadge .dot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+  .acaobadge a{color:var(--muted); font-weight:500; text-decoration:underline; cursor:pointer; margin-left:4px}
+  .newconv{font-size:12px; color:var(--muted); text-decoration:underline; cursor:pointer; background:none; border:0; padding:4px; margin-left:auto}
   #thread{display:flex;flex-direction:column;gap:11px;min-height:100%}
   .row{display:flex}
   .row.me{justify-content:flex-end}
@@ -76,6 +73,13 @@
     box-shadow:0 1px 4px rgba(16,40,62,.08)}
   .suggchips button::before{content:"\2192";color:var(--amber);font-weight:700;margin-right:6px}
   .suggchips button:hover{border-color:#c9d4de}
+  /* botoes de confirmacao/escolha - mais destacados que as sugestoes, porque travam o fluxo */
+  .quickreplies{display:flex;flex-wrap:wrap;gap:8px;margin:-2px 2px 4px}
+  .quickreplies button{border:1.5px solid var(--navy);background:var(--navy);color:#fff;font-size:13px;
+    padding:9px 15px;border-radius:20px;cursor:pointer;font-weight:600;line-height:1.3;
+    box-shadow:0 1px 4px rgba(16,40,62,.12)}
+  .quickreplies button.secondary{background:#fff;color:var(--navy)}
+  .quickreplies button:hover{opacity:.9}
   .empty{margin:auto;text-align:center;padding:24px 22px;max-width:440px}
   .empty .glyph{width:64px;height:64px;border-radius:16px;background:var(--navy);
     display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
@@ -97,14 +101,10 @@
   textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:14px;padding:11px 14px;
     font:inherit;font-size:15px;max-height:130px;outline:none;background:#fff;line-height:1.4}
   textarea:focus{border-color:var(--navy-2)}
+  textarea:disabled{background:#f4f6f8;color:#aeb8c2}
   .send{width:44px;height:44px;flex:0 0 44px;border:0;border-radius:12px;background:var(--navy);color:#fff;
     font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .send:disabled{opacity:.45}
-  /* aparencia "desabilitada" enquanto o tipo nao foi escolhido */
-  body.locked .send{background:#aab4bf}
-  body.locked textarea{background:#f4f6f8}
-  body.locked textarea::placeholder{color:#aeb8c2}
-  body.locked .iconbtn{opacity:.4}
 
   footer{background:var(--card);border-top:1px solid var(--line);
     padding:9px 18px calc(env(safe-area-inset-bottom) + 9px);font-size:11.5px;color:var(--muted)}
@@ -152,13 +152,8 @@
   <main>
     <div class="wrap">
       <div class="toolbar">
-        <div class="segwrap">
-          <span class="seglabel">Tipo</span>
-          <div class="seg" id="seg">
-            <button data-tipo="primeira" data-acao="primeira-ligacao">Primeira Ligação</button>
-            <button data-tipo="retomada" data-acao="ligacao-de-retomada">Retomada</button>
-          </div>
-        </div>
+        <span class="acaobadge" id="acaobadge"><span class="dot"></span><span id="acaobadge-text"></span><a id="trocar-acao">trocar</a></span>
+        <button class="newconv" id="newconv" type="button">Nova conversa</button>
       </div>
       <div id="thread">
         <div class="empty" id="hint">
@@ -175,17 +170,17 @@
               <rect x="244" y="0" width="100" height="100" rx="10" fill="#be7931"/>
             </svg>
           </div>
-          <h2>Bem-vindo ao timwin</h2>
-          <p id="hint-text">Para começar, basta selecionar acima: <strong>Primeira Ligação</strong> ou <strong>Ligação de Retomada</strong>.</p>
+          <h2>Qual é o desafio de hoje?</h2>
+          <p id="hint-text">Conte rapidamente o que você pretende fazer, e eu ajudo a preparar a melhor abordagem.</p>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- 3. SUGESTOES RAPIDAS (some apos a primeira pergunta) -->
-  <div class="suggest" id="suggest" style="display:none">
+  <!-- 3. SUGESTOES RAPIDAS (some apos a primeira mensagem) -->
+  <div class="suggest" id="suggest">
     <div class="wrap">
-      <p class="lbl">Sugestões rápidas</p>
+      <p class="lbl">Para começar</p>
       <div id="starters"></div>
     </div>
   </div>
@@ -194,8 +189,8 @@
   <div class="composer-wrap">
     <div class="wrap">
       <div class="composer">
-        <button class="iconbtn" type="button" title="Anexos (em breve)" aria-label="Anexos (em breve)" disabled>+</button>
-        <textarea id="input" rows="1" placeholder="Escreva sua dúvida..." autocomplete="off"></textarea>
+        <button class="iconbtn" type="button" title="Áudio (em breve)" aria-label="Áudio (em breve)" disabled>&#127908;</button>
+        <textarea id="input" rows="1" placeholder="Escreva o que você pretende fazer..." autocomplete="off"></textarea>
         <button class="send" id="send" aria-label="Enviar">&#8593;</button>
       </div>
     </div>
@@ -219,50 +214,43 @@
   var WEBHOOK = C.WEBHOOK || "";
   var DISCIPLINA = C.DISCIPLINA || "automacao-industrial";
   var TIMEOUT_MS = C.TIMEOUT_MS || 40000;
-  var tipo = null;
-  var acao = null;
-  var started = false;
   var busy = false;
 
-  var LABELS = { primeira: "Primeira Ligação", retomada: "Ligação de Retomada" };
+  var LABELS = { "primeira-ligacao": "Primeira Ligação", "ligacao-de-retomada": "Ligação de Retomada" };
+
+  /* Estado da conversa (100% no cliente; o Make e stateless - reenviamos o
+     historico a cada chamada da rota "confirmado"). conv pode ser:
+     idle | aguardando_confirmacao | fora_escopo | confirmado | escalado */
+  var state = { conv: "idle", acao: null, acaoProposta: null, mensagemOriginal: null, historico: "" };
 
   var thread = document.getElementById("thread");
   var hint = document.getElementById("hint");
   var input = document.getElementById("input");
   var sendBtn = document.getElementById("send");
-  var segEl = document.getElementById("seg");
   var suggestEl = document.getElementById("suggest");
+  var acaobadge = document.getElementById("acaobadge");
+  var acaobadgeText = document.getElementById("acaobadge-text");
   document.getElementById("footer").textContent = (C.APP_NAME || "timwin") + " v" + (C.APP_VERSION || "0.0.0");
-  document.body.classList.add("locked");
+  document.getElementById("trocar-acao").addEventListener("click", function(){ resetConversation(); });
+  document.getElementById("newconv").addEventListener("click", function(){ resetConversation(); });
 
   var STARTERS = [
-    "Como eu abro a ligação?",
-    "Como lidar com objeção?",
-    "Como não parecer vendedor?",
-    "E se pedir para mandar por e-mail?"
+    "Vou ligar para um cliente novo",
+    "Preciso retomar contato com alguém",
+    "Quero preparar uma reunião",
+    "Quero melhorar minha abertura"
   ];
   var startersEl = document.getElementById("starters");
-  STARTERS.forEach(function(s){
-    var b = document.createElement("button");
-    b.textContent = s;
-    b.onclick = function(){ if(!busy) send(s); };
-    startersEl.appendChild(b);
-  });
-
-  segEl.addEventListener("click", function(e){
-    var b = e.target.closest("button"); if(!b) return;
-    tipo = b.getAttribute("data-tipo");
-    acao = b.getAttribute("data-acao");
-    Array.prototype.forEach.call(this.children, function(c){ c.classList.remove("on"); });
-    b.classList.add("on");
-    segEl.classList.remove("need");
-    document.body.classList.remove("locked");
-    if(!started){
-      suggestEl.style.display = "block";
-      var ht = document.getElementById("hint-text");
-      if(ht){ ht.innerHTML = "Tipo definido: <strong>" + LABELS[tipo] + "</strong>. Faça sua pergunta ou toque numa sugestão abaixo."; }
-    }
-  });
+  function renderStarters(){
+    startersEl.innerHTML = "";
+    STARTERS.forEach(function(s){
+      var b = document.createElement("button");
+      b.textContent = s;
+      b.onclick = function(){ if(!busy) send(s); };
+      startersEl.appendChild(b);
+    });
+  }
+  renderStarters();
 
   function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   function fmt(s){
@@ -296,6 +284,23 @@
     box.scrollIntoView({block:"end"});
   }
 
+  /* Botoes de confirmacao/escolha: travam o fluxo ate o vendedor decidir.
+     items: [{label, secondary(bool), onClick}] */
+  function renderQuickReplies(items){
+    var box = document.createElement("div");
+    box.className = "quickreplies";
+    items.forEach(function(item){
+      var b = document.createElement("button");
+      b.textContent = item.label;
+      if(item.secondary){ b.className = "secondary"; }
+      b.onclick = function(){ if(busy) return; box.remove(); item.onClick(); };
+      box.appendChild(b);
+    });
+    thread.appendChild(box);
+    box.scrollIntoView({block:"end"});
+    return box;
+  }
+
   function thinkingRow(){
     var row = document.createElement("div");
     row.className = "row bot";
@@ -303,6 +308,33 @@
     thread.appendChild(row);
     row.scrollIntoView({block:"end"});
     return row;
+  }
+
+  function lockComposer(locked, placeholder){
+    input.disabled = locked;
+    sendBtn.disabled = locked;
+    input.placeholder = placeholder || "Escreva o que você pretende fazer...";
+  }
+
+  function showAcaoBadge(acao){
+    acaobadgeText.textContent = LABELS[acao] || acao;
+    acaobadge.style.display = "inline-flex";
+  }
+
+  function resetConversation(){
+    state = { conv: "idle", acao: null, acaoProposta: null, mensagemOriginal: null, historico: "" };
+    thread.innerHTML = "";
+    var h = document.createElement("div");
+    h.className = "empty"; h.id = "hint";
+    h.innerHTML = '<div class="glyph" aria-hidden="true"><svg viewBox="0 0 574 344" xmlns="http://www.w3.org/2000/svg"><g fill="#ffffff"><rect x="0" y="0" width="100" height="100" rx="10"/><rect x="122" y="0" width="100" height="100" rx="10"/><rect x="0" y="122" width="100" height="100" rx="10"/><rect x="122" y="122" width="100" height="100" rx="10"/><rect x="0" y="244" width="100" height="100" rx="10"/><rect x="122" y="244" width="100" height="100" rx="10"/><rect x="404" y="30" width="170" height="40" rx="16"/><rect x="244" y="134" width="330" height="76" rx="20"/><rect x="244" y="256" width="330" height="76" rx="20"/></g><rect x="244" y="0" width="100" height="100" rx="10" fill="#be7931"/></svg></div><h2>Qual é o desafio de hoje?</h2><p id="hint-text">Conte rapidamente o que você pretende fazer, e eu ajudo a preparar a melhor abordagem.</p>';
+    thread.appendChild(h);
+    hint = h;
+    acaobadge.style.display = "none";
+    suggestEl.style.display = "block";
+    renderStarters();
+    lockComposer(false);
+    input.value = ""; autoGrow();
+    input.focus();
   }
 
   function autoGrow(){ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,130)+"px"; }
@@ -313,54 +345,148 @@
   sendBtn.addEventListener("click", trySend);
   function trySend(){ var t=input.value.trim(); if(t) send(t); }
 
-  function requireTipo(){
-    segEl.classList.remove("need"); void segEl.offsetWidth; segEl.classList.add("need");
-    addBubble("Antes de começar, escolha ali em cima: esta é uma Primeira Ligação ou uma Retomada?", "bot", false);
-  }
-
-  function send(text){
-    if(busy) return;
-    if(!tipo){ requireTipo(); return; }
-    if(!WEBHOOK){ addBubble("Configuração ausente: defina o WEBHOOK no config.js.", "bot", false); return; }
-    if(!started){ started = true; suggestEl.style.display = "none"; }
-    busy = true; sendBtn.disabled = true;
-    addBubble(text, "me", false);
-    input.value=""; autoGrow();
-    var t = thinkingRow();
+  /* Chamada generica ao webhook. params = objeto de querystring.
+     cb(bodyText) recebe o corpo cru da resposta (JSON ou texto plano,
+     quem chama sabe qual esperar pelo estado que mandou). */
+  function callWebhook(params, cb, errCb){
+    var qs = Object.keys(params).map(function(k){
+      return encodeURIComponent(k) + "=" + encodeURIComponent(params[k] == null ? "" : params[k]);
+    }).join("&");
+    var url = WEBHOOK + "?" + qs;
 
     var ctrl = new AbortController();
     var timedOut = false;
     var timer = setTimeout(function(){ timedOut = true; ctrl.abort(); }, TIMEOUT_MS);
 
-    var url = WEBHOOK + "?pergunta=" + encodeURIComponent(text)
-            + "&tipo=" + encodeURIComponent(tipo)
-            + "&acao=" + encodeURIComponent(acao)
-            + "&disciplina=" + encodeURIComponent(DISCIPLINA);
-
     fetch(url, { method:"GET", cache:"no-store", signal:ctrl.signal })
       .then(function(r){ return r.text(); })
-      .then(function(txt){
-        t.remove();
-        var raw = (txt && txt.trim() && txt.trim()!=="Accepted") ? txt.trim()
-                  : "Não consegui responder agora. Tenta de novo em instantes.";
-        var answer = raw, sugg = [];
-        var m = raw.split("###SUGESTOES###");
-        if(m.length > 1){
-          answer = m[0].trim();
-          sugg = m[1].split("|").map(function(x){ return x.trim(); }).filter(function(x){ return x.length; }).slice(0,3);
-        }
-        addBubble(fmt(answer), "bot", true);
-        renderSuggestions(sugg);
-      })
+      .then(function(txt){ clearTimeout(timer); cb(txt); })
       .catch(function(){
+        clearTimeout(timer);
+        if(errCb){ errCb(timedOut); }
+      });
+  }
+
+  function send(text){
+    if(busy) return;
+    if(!WEBHOOK){ addBubble("Configuração ausente: defina o WEBHOOK no config.js.", "bot", false); return; }
+    if(state.conv !== "idle" && state.conv !== "confirmado"){
+      /* nao deveria acontecer (composer fica travado nesses estados), mas por
+         seguranca nao envia texto livre enquanto aguarda uma decisao por botao */
+      return;
+    }
+    busy = true; sendBtn.disabled = true;
+    suggestEl.style.display = "none";
+    addBubble(text, "me", false);
+    input.value=""; autoGrow();
+    var t = thinkingRow();
+
+    if(state.conv === "idle"){
+      callWebhook(
+        { estado:"novo", mensagem:text, disciplina:DISCIPLINA },
+        function(txt){ t.remove(); busy=false; input.focus(); handleNovoResponse(txt, text); },
+        function(timedOut){ t.remove(); busy=false; input.focus(); onWebhookError(timedOut); }
+      );
+    } else { /* confirmado */
+      var acaoAtual = state.acao;
+      var historicoAtual = state.historico;
+      callWebhook(
+        { estado:"confirmado", acao:acaoAtual, disciplina:DISCIPLINA, mensagem:text, historico:historicoAtual },
+        function(txt){ t.remove(); busy=false; input.focus(); handleConfirmadoResponse(txt, text); },
+        function(timedOut){ t.remove(); busy=false; input.focus(); onWebhookError(timedOut); }
+      );
+    }
+  }
+
+  function onWebhookError(timedOut){
+    if(timedOut){
+      addBubble("O timwin demorou para responder. Tente novamente em alguns instantes.", "bot", false);
+    } else {
+      addBubble("Falha de conexão. Verifica a internet e tenta de novo.", "bot", false);
+    }
+  }
+
+  function handleNovoResponse(rawTxt, originalText){
+    var resp;
+    try { resp = JSON.parse(rawTxt); }
+    catch(e){
+      addBubble("Não consegui entender sua mensagem agora. Tenta reformular?", "bot", false);
+      return;
+    }
+    addBubble(resp.mensagem || "...", "bot", false);
+
+    if(resp.estado === "aguardando_confirmacao"){
+      state.conv = "aguardando_confirmacao";
+      state.acaoProposta = resp.acao_proposta;
+      state.mensagemOriginal = originalText;
+      lockComposer(true, "Toque numa opção acima para confirmar...");
+      renderQuickReplies([
+        { label: "Sim, é isso", onClick: function(){ confirmarMetodologia(state.acaoProposta); } },
+        { label: "Não, é a outra", secondary: true, onClick: function(){
+            var outra = state.acaoProposta === "primeira-ligacao" ? "ligacao-de-retomada" : "primeira-ligacao";
+            confirmarMetodologia(outra);
+          } }
+      ]);
+    } else if(resp.estado === "fora_escopo"){
+      state.conv = "fora_escopo";
+      state.mensagemOriginal = originalText;
+      lockComposer(true, "Toque numa opção acima...");
+      renderQuickReplies([
+        { label: "Pode tratar como retomada", onClick: function(){ confirmarMetodologia("ligacao-de-retomada"); } },
+        { label: "Prefiro falar com o Demetrius", secondary: true, onClick: function(){ escalar(); } }
+      ]);
+    } else {
+      /* resposta inesperada: nao trava o app, deixa tentar de novo */
+      state.conv = "idle";
+      lockComposer(false);
+    }
+  }
+
+  function confirmarMetodologia(acao){
+    state.acao = acao;
+    var t = thinkingRow();
+    callWebhook(
+      { estado:"confirmado", acao:acao, disciplina:DISCIPLINA, mensagem:state.mensagemOriginal, historico:"" },
+      function(txt){
         t.remove();
-        if(timedOut){
-          addBubble("O timwin demorou para responder. Tente novamente em alguns instantes.", "bot", false);
-        } else {
-          addBubble("Falha de conexão. Verifica a internet e tenta de novo.", "bot", false);
-        }
-      })
-      .finally(function(){ clearTimeout(timer); busy=false; sendBtn.disabled=false; input.focus(); });
+        handleConfirmadoResponse(txt, state.mensagemOriginal);
+        state.conv = "confirmado";
+        lockComposer(false);
+        showAcaoBadge(acao);
+      },
+      function(timedOut){ t.remove(); state.conv = "idle"; lockComposer(false); onWebhookError(timedOut); }
+    );
+  }
+
+  function escalar(){
+    var t = thinkingRow();
+    callWebhook(
+      { estado:"escalar", mensagem:state.mensagemOriginal, historico:state.historico },
+      function(txt){
+        t.remove();
+        addBubble(txt && txt.trim() ? txt.trim() : "Beleza, avisei o Demetrius.", "bot", false);
+        /* topico resolvido: libera para uma nova pergunta, mantendo o historico da tela */
+        state.conv = "idle";
+        state.acaoProposta = null;
+        state.mensagemOriginal = null;
+        lockComposer(false);
+      },
+      function(timedOut){ t.remove(); state.conv = "idle"; lockComposer(false); onWebhookError(timedOut); }
+    );
+  }
+
+  function handleConfirmadoResponse(rawTxt, userMsg){
+    var raw = (rawTxt && rawTxt.trim() && rawTxt.trim()!=="Accepted") ? rawTxt.trim()
+              : "Não consegui responder agora. Tenta de novo em instantes.";
+    var answer = raw, sugg = [];
+    var m = raw.split("###SUGESTOES###");
+    if(m.length > 1){
+      answer = m[0].trim();
+      sugg = m[1].split("|").map(function(x){ return x.trim(); }).filter(function(x){ return x.length; }).slice(0,3);
+    }
+    addBubble(fmt(answer), "bot", true);
+    renderSuggestions(sugg);
+    state.historico += "Vendedor: " + userMsg + "\nTimwin: " + answer + "\n\n";
   }
 
   if("serviceWorker" in navigator){
