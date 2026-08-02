@@ -234,19 +234,30 @@
   document.getElementById("trocar-acao").addEventListener("click", function(){ resetConversation(); });
   document.getElementById("newconv").addEventListener("click", function(){ resetConversation(); });
 
+  /* Starters: 1 e 2 pulam a classificacao (vao direto pra rota "confirmado"
+     com a metodologia ja definida). 3 e 4 sao abertos: so preenchem o campo
+     de texto, o vendedor completa e envia do jeito que quiser. */
   var STARTERS = [
-    "Vou ligar para um cliente novo",
-    "Preciso retomar contato com alguém",
-    "Quero preparar uma reunião",
-    "Quero melhorar minha abertura"
+    { label:"Vai ligar para alguém novo?", type:"bypass", acao:"primeira-ligacao", mensagem:"Vou ligar para um cliente novo." },
+    { label:"Precisa retomar uma conta?", type:"bypass", acao:"ligacao-de-retomada", mensagem:"Preciso retomar contato com uma conta." },
+    { label:"Tem alguma dificuldade em mente?", type:"prefill", prefill:"Minha dificuldade é: " },
+    { label:"Quer treinar uma objeção difícil?", type:"prefill", prefill:"Quero treinar uma resposta para essa objeção: " }
   ];
   var startersEl = document.getElementById("starters");
   function renderStarters(){
     startersEl.innerHTML = "";
     STARTERS.forEach(function(s){
       var b = document.createElement("button");
-      b.textContent = s;
-      b.onclick = function(){ if(!busy) send(s); };
+      b.textContent = s.label;
+      b.onclick = function(){
+        if(busy) return;
+        if(s.type === "bypass"){ sendBypass(s.acao, s.mensagem); }
+        else {
+          input.value = s.prefill || "";
+          autoGrow(); input.focus();
+          input.selectionStart = input.selectionEnd = input.value.length;
+        }
+      };
       startersEl.appendChild(b);
     });
   }
@@ -406,11 +417,25 @@
     }
   }
 
+  /* Bypass de classificacao: usado pelos starters 1 e 2, que ja sabem a
+     metodologia. Nao passa pela rota "novo" do Make. */
+  function sendBypass(acao, mensagem){
+    if(busy) return;
+    if(!WEBHOOK){ addBubble("Configuração ausente: defina o WEBHOOK no config.js.", "bot", false); return; }
+    suggestEl.style.display = "none";
+    addBubble(mensagem, "me", false);
+    state.mensagemOriginal = mensagem;
+    confirmarMetodologia(acao);
+  }
+
   function handleNovoResponse(rawTxt, originalText){
     var resp;
     try { resp = JSON.parse(rawTxt); }
     catch(e){
-      addBubble("Não consegui entender sua mensagem agora. Tenta reformular?", "bot", false);
+      addBubble("Não peguei bem o que você quis dizer. Pode tentar reformular ou escolher uma das opções abaixo.", "bot", false);
+      state.conv = "idle";
+      lockComposer(false);
+      suggestEl.style.display = "block";
       return;
     }
     addBubble(resp.mensagem || "...", "bot", false);
@@ -439,39 +464,48 @@
       /* resposta inesperada: nao trava o app, deixa tentar de novo */
       state.conv = "idle";
       lockComposer(false);
+      suggestEl.style.display = "block";
     }
   }
 
   function confirmarMetodologia(acao){
+    if(busy) return;
+    busy = true;
+    lockComposer(true, "Um instante...");
     state.acao = acao;
     var t = thinkingRow();
     callWebhook(
       { estado:"confirmado", acao:acao, disciplina:DISCIPLINA, mensagem:state.mensagemOriginal, historico:"" },
       function(txt){
-        t.remove();
+        t.remove(); busy = false;
         handleConfirmadoResponse(txt, state.mensagemOriginal);
         state.conv = "confirmado";
         lockComposer(false);
         showAcaoBadge(acao);
+        input.focus();
       },
-      function(timedOut){ t.remove(); state.conv = "idle"; lockComposer(false); onWebhookError(timedOut); }
+      function(timedOut){ t.remove(); busy = false; state.conv = "idle"; lockComposer(false); onWebhookError(timedOut); }
     );
   }
 
   function escalar(){
+    if(busy) return;
+    busy = true;
+    lockComposer(true, "Um instante...");
     var t = thinkingRow();
     callWebhook(
       { estado:"escalar", mensagem:state.mensagemOriginal, historico:state.historico },
       function(txt){
-        t.remove();
+        t.remove(); busy = false;
         addBubble(txt && txt.trim() ? txt.trim() : "Beleza, avisei o Demetrius.", "bot", false);
         /* topico resolvido: libera para uma nova pergunta, mantendo o historico da tela */
         state.conv = "idle";
         state.acaoProposta = null;
         state.mensagemOriginal = null;
         lockComposer(false);
+        input.focus();
       },
-      function(timedOut){ t.remove(); state.conv = "idle"; lockComposer(false); onWebhookError(timedOut); }
+      function(timedOut){ t.remove(); busy = false; state.conv = "idle"; lockComposer(false); onWebhookError(timedOut); }
     );
   }
 
@@ -487,6 +521,46 @@
     addBubble(fmt(answer), "bot", true);
     renderSuggestions(sugg);
     state.historico += "Vendedor: " + userMsg + "\nTimwin: " + answer + "\n\n";
+    renderReportAction();
+  }
+
+  /* Acao discreta de gerar relatorio: aparece apos cada resposta da rota
+     confirmado. Nao trava a conversa - o vendedor pode continuar batendo
+     papo normalmente sem nunca tocar nela. */
+  function renderReportAction(){
+    var box = document.createElement("div");
+    box.className = "quickreplies";
+    var b = document.createElement("button");
+    b.className = "secondary";
+    b.textContent = "📄 Gerar Relatório";
+    b.onclick = function(){ if(busy) return; box.remove(); gerarRelatorio(); };
+    box.appendChild(b);
+    thread.appendChild(box);
+    box.scrollIntoView({block:"end"});
+  }
+
+  function gerarRelatorio(){
+    if(busy) return;
+    busy = true;
+    lockComposer(true, "Gerando relatório...");
+    var t = thinkingRow();
+    callWebhook(
+      { estado:"relatorio", disciplina:DISCIPLINA, acao:state.acao || "", historico:state.historico },
+      function(txt){
+        t.remove(); busy = false; lockComposer(false);
+        var link = (txt || "").trim();
+        if(link.indexOf("http") === 0){
+          addBubble('Relatório pronto. <a href="' + esc(link) + '" target="_blank" rel="noopener">Abrir relatório</a>', "bot", true);
+          renderQuickReplies([
+            { label: "↗️ Continuar Conversa", secondary: true, onClick: function(){ input.focus(); } }
+          ]);
+        } else {
+          addBubble("Não consegui gerar o relatório agora. Tenta de novo em instantes.", "bot", false);
+        }
+        input.focus();
+      },
+      function(timedOut){ t.remove(); busy = false; lockComposer(false); onWebhookError(timedOut); }
+    );
   }
 
   if("serviceWorker" in navigator){
