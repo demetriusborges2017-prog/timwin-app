@@ -779,26 +779,30 @@
   }
 
   /* Resposta do Make traz, na ordem, ate 3 blocos ocultos apos o texto
-     visivel: ###SUGERIR_TROCA### <slug>, ###ESTADO### <bloco> e
-     ###SUGESTOES### <perguntas>. Nenhum dos tres e exibido ao vendedor;
-     so o texto que sobra depois de remove-los vira o balao. */
+     visivel: ###SUGERIR_TROCA### <slug>, ###SUGESTOES### <baloes> e, por
+     ultimo, ###ESTADO### <bloco>. DESDE 03/08/2026 (blindagem contra corte
+     por limite de tokens) o ESTADO foi movido para o final: se a resposta
+     for cortada por estourar o max_tokens, o que se perde e o Estado
+     (invisivel), nunca os Baloes (visiveis e clicaveis). Nenhum dos tres
+     blocos e exibido ao vendedor; so o texto que sobra depois de
+     remove-los vira o balao de resposta. */
   function handleConfirmadoResponse(rawTxt, userMsg){
     var raw = (rawTxt && rawTxt.trim() && rawTxt.trim()!=="Accepted") ? rawTxt.trim()
               : "Não consegui responder agora. Tenta de novo em instantes.";
 
-    var sugg = [];
-    var rest = raw;
-    var mSug = rest.split("###SUGESTOES###");
-    rest = mSug[0];
-    if(mSug.length > 1){
-      sugg = mSug[1].split("|").map(function(x){ return x.trim(); }).filter(function(x){ return x.length; }).slice(0,3);
-    }
-
     var estadoBloco = "";
+    var rest = raw;
     var mEstado = rest.split("###ESTADO###");
     rest = mEstado[0];
     if(mEstado.length > 1){
       estadoBloco = mEstado[1].trim();
+    }
+
+    var sugg = [];
+    var mSug = rest.split("###SUGESTOES###");
+    rest = mSug[0];
+    if(mSug.length > 1){
+      sugg = mSug[1].split("|").map(function(x){ return x.trim(); }).filter(function(x){ return x.length; }).slice(0,3);
     }
 
     var trocaSlug = null;
