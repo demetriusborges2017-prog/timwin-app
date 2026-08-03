@@ -14,11 +14,17 @@
    aplicada com confirmacao do vendedor) e ###ESTADO### (Estado Conversacional,
    reenviado junto do historico como ###ESTADO_ATUAL### para o Make nao perder
    contexto, sem chamada extra a OpenAI). Ver PWA/index.html,
-   handleConfirmadoResponse/buildHistoricoEnvio/offerTrocaMetodologia. */
+   handleConfirmadoResponse/buildHistoricoEnvio/offerTrocaMetodologia.
+
+   ATUALIZADO 03/08/2026 (correcao de bug real de teste): cerebro v1.7 - a
+   ordem dos blocos ocultos mudou para blindar contra corte por limite de
+   tokens: ###SUGESTOES### (baloes, visiveis/clicaveis) agora vem ANTES de
+   ###ESTADO### (invisivel); se a resposta for cortada, o Estado e a vitima,
+   nunca os Baloes. handleConfirmadoResponse atualizado para a nova ordem. */
 window.CONFIG = {
   WEBHOOK: "https://hook.us2.make.com/9vcpo34o2scmp4cakjvtb9a5h7k1ugig",
   DISCIPLINA: "automacao-industrial",
   APP_NAME: "timwin",
-  APP_VERSION: "0.8.0",
+  APP_VERSION: "0.8.1",
   TIMEOUT_MS: 40000
 };
