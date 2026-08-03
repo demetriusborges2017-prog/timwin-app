@@ -20,11 +20,17 @@
    ordem dos blocos ocultos mudou para blindar contra corte por limite de
    tokens: ###SUGESTOES### (baloes, visiveis/clicaveis) agora vem ANTES de
    ###ESTADO### (invisivel); se a resposta for cortada, o Estado e a vitima,
-   nunca os Baloes. handleConfirmadoResponse atualizado para a nova ordem. */
+   nunca os Baloes. handleConfirmadoResponse atualizado para a nova ordem.
+
+   ATUALIZADO 03/08/2026 (auditoria dos baloes, cerebro v1.8): adicionado um
+   console.log TEMPORARIO em handleConfirmadoResponse com o texto CRU recebido
+   do Make, antes de qualquer parsing - serve so para diagnostico (ver
+   AFAZER_ESTRATEGICO_timwin.md e LEIAME secao 6, bloco desta rodada). Remover
+   depois que a causa raiz dos baloes ausentes for confirmada. */
 window.CONFIG = {
   WEBHOOK: "https://hook.us2.make.com/9vcpo34o2scmp4cakjvtb9a5h7k1ugig",
   DISCIPLINA: "automacao-industrial",
   APP_NAME: "timwin",
-  APP_VERSION: "0.8.1",
+  APP_VERSION: "0.8.2",
   TIMEOUT_MS: 40000
 };
