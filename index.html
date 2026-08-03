@@ -356,7 +356,7 @@
   /* Estado da conversa (100% no cliente; o Make e stateless - reenviamos o
      historico a cada chamada da rota "confirmado"). conv pode ser:
      idle | aguardando_confirmacao | fora_escopo | confirmado | escalado */
-  var state = { conv: "idle", acao: null, acaoProposta: null, mensagemOriginal: null, historico: "" };
+  var state = { conv: "idle", acao: null, acaoProposta: null, mensagemOriginal: null, historico: "", estadoAtual: null, trocaPendente: null };
 
   var thread = document.getElementById("thread");
   var hint = document.getElementById("hint");
@@ -565,6 +565,21 @@
     showAcaoBadge(novaAcao);
     addBubble("Metodologia alterada para " + LABELS[novaAcao] + ". Continuamos a partir daqui.", "bot", false);
   }
+  /* Sugestao de troca de metodologia feita pelo proprio Timwin (marcador
+     ###SUGERIR_TROCA### na resposta): nunca troca sozinho, so oferece o
+     botao. So a confirmacao do vendedor aciona trocarMetodologia, que
+     preserva historico e Estado Conversacional (a troca de base acontece
+     sozinha na proxima chamada, pois o Make busca o base.txt pela acao
+     atual a cada turno). */
+  function offerTrocaMetodologia(novaAcao){
+    if(state.trocaPendente === novaAcao) return;
+    state.trocaPendente = novaAcao;
+    var atual = state.acao;
+    renderQuickReplies([
+      { label: "Trocar para " + (LABELS[novaAcao] || novaAcao), onClick: function(){ state.trocaPendente = null; trocarMetodologia(novaAcao); } },
+      { label: "Manter " + (LABELS[atual] || atual), secondary: true, onClick: function(){ state.trocaPendente = null; } }
+    ]);
+  }
   /* Ligacao de Aprofundamento ainda nao tem metodologia propria (backlog);
      por enquanto, encaminha para o Demetrius igual ao fluxo "fora do escopo". */
   function pedirAprofundamento(){
@@ -573,7 +588,7 @@
   }
 
   function resetConversation(){
-    state = { conv: "idle", acao: null, acaoProposta: null, mensagemOriginal: null, historico: "" };
+    state = { conv: "idle", acao: null, acaoProposta: null, mensagemOriginal: null, historico: "", estadoAtual: null, trocaPendente: null };
     thread.innerHTML = "";
     var h = document.createElement("div");
     h.className = "empty"; h.id = "hint";
@@ -641,13 +656,26 @@
       );
     } else { /* confirmado */
       var acaoAtual = state.acao;
-      var historicoAtual = state.historico;
+      var historicoAtual = buildHistoricoEnvio();
       callWebhook(
         { estado:"confirmado", acao:acaoAtual, disciplina:DISCIPLINA, mensagem:text, historico:historicoAtual },
         function(txt){ t.remove(); busy=false; input.focus(); handleConfirmadoResponse(txt, text); },
         function(timedOut){ t.remove(); busy=false; input.focus(); onWebhookError(timedOut); }
       );
     }
+  }
+
+  /* Historico enviado ao Make = transcricao visivel da tela + (se existir)
+     o bloco tecnico ###ESTADO_ATUAL### com o Estado Conversacional da
+     resposta anterior. O Estado nunca acumula: e sempre sobrescrito, nunca
+     concatenado ao historico visivel, para nao inflar o prompt nem exigir
+     uma segunda chamada a OpenAI (Camada de Conducao, Digest v1.4). */
+  function buildHistoricoEnvio(){
+    var h = state.historico;
+    if(state.estadoAtual){
+      h += "\n###ESTADO_ATUAL###\n" + state.estadoAtual + "\n";
+    }
+    return h;
   }
 
   function onWebhookError(timedOut){
@@ -750,18 +778,53 @@
     );
   }
 
+  /* Resposta do Make traz, na ordem, ate 3 blocos ocultos apos o texto
+     visivel: ###SUGERIR_TROCA### <slug>, ###ESTADO### <bloco> e
+     ###SUGESTOES### <perguntas>. Nenhum dos tres e exibido ao vendedor;
+     so o texto que sobra depois de remove-los vira o balao. */
   function handleConfirmadoResponse(rawTxt, userMsg){
     var raw = (rawTxt && rawTxt.trim() && rawTxt.trim()!=="Accepted") ? rawTxt.trim()
               : "Não consegui responder agora. Tenta de novo em instantes.";
-    var answer = raw, sugg = [];
-    var m = raw.split("###SUGESTOES###");
-    if(m.length > 1){
-      answer = m[0].trim();
-      sugg = m[1].split("|").map(function(x){ return x.trim(); }).filter(function(x){ return x.length; }).slice(0,3);
+
+    var sugg = [];
+    var rest = raw;
+    var mSug = rest.split("###SUGESTOES###");
+    rest = mSug[0];
+    if(mSug.length > 1){
+      sugg = mSug[1].split("|").map(function(x){ return x.trim(); }).filter(function(x){ return x.length; }).slice(0,3);
     }
+
+    var estadoBloco = "";
+    var mEstado = rest.split("###ESTADO###");
+    rest = mEstado[0];
+    if(mEstado.length > 1){
+      estadoBloco = mEstado[1].trim();
+    }
+
+    var trocaSlug = null;
+    var mTroca = rest.split("###SUGERIR_TROCA###");
+    rest = mTroca[0];
+    if(mTroca.length > 1){
+      var slugCandidato = mTroca[1].trim().split(/\s+/)[0];
+      if(slugCandidato === "primeira-ligacao" || slugCandidato === "ligacao-de-retomada"){
+        trocaSlug = slugCandidato;
+      }
+    }
+
+    var answer = rest.trim();
     addBubble(fmt(answer), "bot", true);
     renderSuggestions(sugg);
     state.historico += "Vendedor: " + userMsg + "\nTimwin: " + answer + "\n\n";
+
+    /* Estado Conversacional: sobrescreve, nunca acumula (buildHistoricoEnvio
+       le sempre o mais recente). */
+    if(estadoBloco){ state.estadoAtual = estadoBloco; }
+
+    /* Sugestao de troca de metodologia: so oferece o botao; o Timwin nunca
+       troca sozinho (aguarda a confirmacao explicita pela interface). */
+    if(trocaSlug && trocaSlug !== state.acao){
+      offerTrocaMetodologia(trocaSlug);
+    }
   }
 
   /* Gerar relatorio: acionado pelo botao fixo da barra de ferramentas (nao e
