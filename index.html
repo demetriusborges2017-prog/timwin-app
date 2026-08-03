@@ -52,7 +52,12 @@
     background:#fff; border:1px solid var(--line); padding:6px 12px; border-radius:20px}
   .acaobadge .dot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
   .acaobadge a{color:var(--muted); font-weight:500; text-decoration:underline; cursor:pointer; margin-left:4px}
-  .newconv{font-size:12px; color:var(--muted); text-decoration:underline; cursor:pointer; background:none; border:0; padding:4px; margin-left:auto}
+  .toolbar-actions{display:flex; align-items:center; gap:14px; margin-left:auto}
+  .reportbtn{display:none; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:#fff;
+    background:var(--amber); border:0; padding:7px 13px; border-radius:20px; cursor:pointer; line-height:1.3}
+  .reportbtn:hover{opacity:.9}
+  .reportbtn:disabled{opacity:.5; cursor:not-allowed}
+  .newconv{font-size:12px; color:var(--muted); text-decoration:underline; cursor:pointer; background:none; border:0; padding:4px}
   #thread{display:flex;flex-direction:column;gap:11px;min-height:100%}
   .row{display:flex}
   .row.me{justify-content:flex-end}
@@ -153,7 +158,10 @@
     <div class="wrap">
       <div class="toolbar">
         <span class="acaobadge" id="acaobadge"><span class="dot"></span><span id="acaobadge-text"></span><a id="trocar-acao">trocar</a></span>
-        <button class="newconv" id="newconv" type="button">Nova conversa</button>
+        <div class="toolbar-actions">
+          <button class="reportbtn" id="reportbtn" type="button">📄 Gerar Relatório</button>
+          <button class="newconv" id="newconv" type="button">Nova conversa</button>
+        </div>
       </div>
       <div id="thread">
         <div class="empty" id="hint">
@@ -216,7 +224,7 @@
   var TIMEOUT_MS = C.TIMEOUT_MS || 40000;
   var busy = false;
 
-  var LABELS = { "primeira-ligacao": "Primeira Ligação", "ligacao-de-retomada": "Ligação de Retomada" };
+  var LABELS = { "primeira-ligacao": "Primeira Ligação para Novo Cliente", "ligacao-de-retomada": "Ligação de Retomada" };
 
   /* Estado da conversa (100% no cliente; o Make e stateless - reenviamos o
      historico a cada chamada da rota "confirmado"). conv pode ser:
@@ -230,9 +238,11 @@
   var suggestEl = document.getElementById("suggest");
   var acaobadge = document.getElementById("acaobadge");
   var acaobadgeText = document.getElementById("acaobadge-text");
+  var reportBtn = document.getElementById("reportbtn");
   document.getElementById("footer").textContent = (C.APP_NAME || "timwin") + " v" + (C.APP_VERSION || "0.0.0");
-  document.getElementById("trocar-acao").addEventListener("click", function(){ resetConversation(); });
+  document.getElementById("trocar-acao").addEventListener("click", function(){ promptTrocarMetodologia(); });
   document.getElementById("newconv").addEventListener("click", function(){ resetConversation(); });
+  reportBtn.addEventListener("click", function(){ if(busy) return; gerarRelatorio(); });
 
   /* Starters: 1 e 2 pulam a classificacao (vao direto pra rota "confirmado"
      com a metodologia ja definida). 3 e 4 sao abertos: so preenchem o campo
@@ -330,6 +340,25 @@
   function showAcaoBadge(acao){
     acaobadgeText.textContent = LABELS[acao] || acao;
     acaobadge.style.display = "inline-flex";
+    reportBtn.style.display = "inline-flex";
+  }
+
+  /* Troca de metodologia no meio da conversa (sem perder o historico), usada
+     pelo link "trocar" do badge e quando o vendedor confirma uma sugestao de
+     troca feita pelo proprio Timwin. */
+  function promptTrocarMetodologia(){
+    if(busy || !state.acao) return;
+    var atual = state.acao;
+    var outra = atual === "primeira-ligacao" ? "ligacao-de-retomada" : "primeira-ligacao";
+    renderQuickReplies([
+      { label: "Trocar para " + LABELS[outra], onClick: function(){ trocarMetodologia(outra); } },
+      { label: "Manter " + LABELS[atual], secondary: true, onClick: function(){} }
+    ]);
+  }
+  function trocarMetodologia(novaAcao){
+    state.acao = novaAcao;
+    showAcaoBadge(novaAcao);
+    addBubble("Metodologia alterada para " + LABELS[novaAcao] + ". Continuamos a partir daqui.", "bot", false);
   }
 
   function resetConversation(){
@@ -341,6 +370,7 @@
     thread.appendChild(h);
     hint = h;
     acaobadge.style.display = "none";
+    reportBtn.style.display = "none";
     suggestEl.style.display = "block";
     renderStarters();
     lockComposer(false);
@@ -521,45 +551,30 @@
     addBubble(fmt(answer), "bot", true);
     renderSuggestions(sugg);
     state.historico += "Vendedor: " + userMsg + "\nTimwin: " + answer + "\n\n";
-    renderReportAction();
   }
 
-  /* Acao discreta de gerar relatorio: aparece apos cada resposta da rota
-     confirmado. Nao trava a conversa - o vendedor pode continuar batendo
-     papo normalmente sem nunca tocar nela. */
-  function renderReportAction(){
-    var box = document.createElement("div");
-    box.className = "quickreplies";
-    var b = document.createElement("button");
-    b.className = "secondary";
-    b.textContent = "📄 Gerar Relatório";
-    b.onclick = function(){ if(busy) return; box.remove(); gerarRelatorio(); };
-    box.appendChild(b);
-    thread.appendChild(box);
-    box.scrollIntoView({block:"end"});
-  }
-
+  /* Gerar relatorio: acionado pelo botao fixo da barra de ferramentas (nao e
+     mais um balao da conversa). Fica visivel assim que uma metodologia esta
+     confirmada (showAcaoBadge) e some no reset (resetConversation). */
   function gerarRelatorio(){
     if(busy) return;
     busy = true;
+    reportBtn.disabled = true;
     lockComposer(true, "Gerando relatório...");
     var t = thinkingRow();
     callWebhook(
       { estado:"relatorio", disciplina:DISCIPLINA, acao:state.acao || "", historico:state.historico },
       function(txt){
-        t.remove(); busy = false; lockComposer(false);
+        t.remove(); busy = false; reportBtn.disabled = false; lockComposer(false);
         var link = (txt || "").trim();
         if(link.indexOf("http") === 0){
           addBubble('Relatório pronto. <a href="' + esc(link) + '" target="_blank" rel="noopener">Abrir relatório</a>', "bot", true);
-          renderQuickReplies([
-            { label: "↗️ Continuar Conversa", secondary: true, onClick: function(){ input.focus(); } }
-          ]);
         } else {
           addBubble("Não consegui gerar o relatório agora. Tenta de novo em instantes.", "bot", false);
         }
         input.focus();
       },
-      function(timedOut){ t.remove(); busy = false; lockComposer(false); onWebhookError(timedOut); }
+      function(timedOut){ t.remove(); busy = false; reportBtn.disabled = false; lockComposer(false); onWebhookError(timedOut); }
     );
   }
 
