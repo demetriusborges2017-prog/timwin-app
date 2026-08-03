@@ -12,6 +12,6 @@ window.CONFIG = {
   WEBHOOK: "https://hook.us2.make.com/9vcpo34o2scmp4cakjvtb9a5h7k1ugig",
   DISCIPLINA: "automacao-industrial",
   APP_NAME: "timwin",
-  APP_VERSION: "0.6.0",
+  APP_VERSION: "0.7.0",
   TIMEOUT_MS: 40000
 };
