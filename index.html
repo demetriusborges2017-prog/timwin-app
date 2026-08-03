@@ -787,6 +787,14 @@
      blocos e exibido ao vendedor; so o texto que sobra depois de
      remove-los vira o balao de resposta. */
   function handleConfirmadoResponse(rawTxt, userMsg){
+    /* DEBUG TEMPORARIO (03/08/2026, auditoria dos baloes): loga o texto CRU
+       recebido do Make, antes de qualquer parsing, no console do navegador.
+       Serve para confirmar se ###SUGESTOES### chega ou nao ate o navegador -
+       se aparecer aqui mas os baloes nao renderizarem, o bug e do parser/render
+       abaixo; se NAO aparecer aqui, o problema esta a montante (Make/modelo).
+       Remover depois que a causa for confirmada. */
+    console.log("[timwin debug] resposta crua do Make (confirmado):", rawTxt);
+
     var raw = (rawTxt && rawTxt.trim() && rawTxt.trim()!=="Accepted") ? rawTxt.trim()
               : "Não consegui responder agora. Tenta de novo em instantes.";
 
