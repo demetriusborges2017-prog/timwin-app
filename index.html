@@ -24,9 +24,12 @@
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--bg); color:var(--ink);
-    display:flex; flex-direction:column; height:100dvh; overflow:hidden;
   }
   .wrap{width:100%; max-width:var(--wrap); margin:0 auto}
+
+  /* 0. LAYOUT GERAL: sidebar (Especialidades/Capacidades) + coluna do chat */
+  .app{display:flex; height:100dvh; overflow:hidden}
+  .chatcol{flex:1; min-width:0; display:flex; flex-direction:column; height:100dvh; overflow:hidden}
 
   header{background:var(--navy); color:#fff; box-shadow:0 1px 0 rgba(0,0,0,.08)}
   .hbar{display:flex; align-items:center; gap:12px; padding:calc(env(safe-area-inset-top) + 12px) 18px 12px}
@@ -41,10 +44,57 @@
     background:rgba(190,121,49,.20);color:#f0c191;border:1px solid rgba(190,121,49,.35)}
   .user{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);
     display:flex;align-items:center;justify-content:center;font-size:14px;opacity:.7}
+  .menubtn{display:none;width:32px;height:32px;flex:0 0 32px;border-radius:9px;background:rgba(255,255,255,.12);
+    border:0;color:#fff;font-size:17px;cursor:pointer;align-items:center;justify-content:center}
   .disc{display:flex;align-items:center;gap:7px;padding:0 18px 12px}
   .discbadge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;
     background:rgba(255,255,255,.10);padding:5px 11px;border-radius:8px}
   .discbadge .dot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+
+  /* 0b. SIDEBAR: Especialidades do Timwin + Capacidades do Timwin */
+  .sidebar{width:272px; flex:0 0 272px; background:#fff; border-right:1px solid var(--line);
+    overflow-y:auto; height:100dvh}
+  .sidebar-inner{padding:22px 18px 28px}
+  .sidebar-brand{display:flex; align-items:center; gap:10px; margin-bottom:22px}
+  .sidebar-brand .mark{background:var(--navy)}
+  .sidebar-brand .mark svg{width:22px}
+  .sidebar-brand-name{font-size:15px; font-weight:700; color:var(--navy)}
+  .sidebar-head{display:none}
+  .sidebar-close{background:none;border:0;font-size:24px;color:var(--muted);cursor:pointer;line-height:1;padding:2px 6px}
+  .sidebar-section{margin-bottom:24px}
+  .sidebar-section:last-child{margin-bottom:0}
+  .sidebar-section h3{font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+    color:var(--muted); margin:0 0 4px}
+  .sidebar-section .subtxt{font-size:11.5px; color:var(--muted); margin:0 0 12px; line-height:1.4}
+  .disc-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1px}
+  .disc-item{display:flex; align-items:center; gap:9px; padding:7px 8px; border-radius:8px; font-size:13px; color:#8b95a1}
+  .disc-item.active{color:var(--navy); font-weight:600; background:#f5efe6}
+  .disc-dot{width:6px;height:6px;border-radius:50%;background:var(--line);flex:0 0 6px}
+  .disc-item.active .disc-dot{background:var(--amber)}
+  .disc-item .tag{margin-left:auto; font-size:10px; font-weight:700; color:var(--amber)}
+  .cap-group{margin-bottom:16px}
+  .cap-group:last-child{margin-bottom:0}
+  .cap-group h4{font-size:12px; font-weight:700; color:var(--ink); margin:0 0 8px}
+  .cap-item{display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:8px 9px; border-radius:9px; font-size:12.5px; margin-bottom:2px}
+  .cap-item .name{color:var(--ink)}
+  .cap-item.disabled .name{color:#aeb8c2}
+  .cap-item.clickable{cursor:pointer}
+  .cap-item.clickable:hover{background:#f4f6f8}
+  .pill{font-size:9.5px; font-weight:700; padding:2px 8px; border-radius:20px; letter-spacing:.2px; flex:0 0 auto; white-space:nowrap}
+  .pill.live{background:rgba(190,121,49,.18); color:#8a5a1f}
+  .pill.soon{background:#eef1f4; color:var(--muted); border:1px solid var(--line)}
+  .pill.future{background:#eef1f4; color:#c1c9d1}
+  .sidebar-backdrop{display:none}
+
+  @media (max-width: 900px){
+    .menubtn{display:flex}
+    .sidebar{position:fixed; left:0; top:0; bottom:0; z-index:40; width:86vw; max-width:320px;
+      transform:translateX(-100%); transition:transform .22s ease; box-shadow:2px 0 22px rgba(16,40,62,.2)}
+    .sidebar.open{transform:translateX(0)}
+    .sidebar-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
+    .sidebar-backdrop.open{display:block; position:fixed; inset:0; background:rgba(16,40,62,.35); z-index:30}
+  }
 
   main{flex:1; overflow-y:auto; padding:18px 16px}
   .toolbar{margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:30px}
@@ -120,6 +170,30 @@
 </style>
 </head>
 <body>
+<div class="app">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- 0. SIDEBAR: Especialidades e Capacidades do Timwin (nao selecionavel nesta fase) -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <div class="sidebar-head">
+        <span class="sidebar-brand-name">timwin</span>
+        <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <section class="sidebar-section">
+        <h3>Especialidades do Timwin</h3>
+        <p class="subtxt">Disciplinas com metodologia própria. Novas disciplinas entram progressivamente.</p>
+        <ul class="disc-list" id="discList"></ul>
+      </section>
+      <section class="sidebar-section">
+        <h3>Capacidades do Timwin</h3>
+        <p class="subtxt">O que já está disponível e o que vem a seguir.</p>
+        <div id="capGroups"></div>
+      </section>
+    </div>
+  </aside>
+
+  <div class="chatcol">
 
   <!-- 1. HEADER -->
   <header>
@@ -144,6 +218,7 @@
         </div>
       </div>
       <div class="hright">
+        <button class="menubtn" id="menubtn" type="button" aria-label="Especialidades e capacidades do Timwin">&#9776;</button>
         <span class="env" id="env-chip">Beta</span>
         <span class="user" title="Usuario" aria-hidden="true">&#9679;</span>
       </div>
@@ -216,6 +291,9 @@
     </div>
   </footer>
 
+  </div><!-- /chatcol -->
+</div><!-- /app -->
+
 <script src="config.js"></script>
 <script>
   var C = window.CONFIG || {};
@@ -225,6 +303,49 @@
   var busy = false;
 
   var LABELS = { "primeira-ligacao": "Primeira Ligação para Novo Cliente", "ligacao-de-retomada": "Ligação de Retomada" };
+
+  /* Especialidades do Timwin: disciplinas com metodologia propria (hoje so
+     Automacao Industrial). Lista apenas informativa nesta fase (nao
+     selecionavel); prepara a arquitetura de navegacao para as proximas. */
+  var DISCIPLINAS = [
+    { nome:"Concreto" },
+    { nome:"Agregados" },
+    { nome:"Fundações e Geotecnia" },
+    { nome:"Estruturas de Aço" },
+    { nome:"Pré-Moldados" },
+    { nome:"Automação Industrial", ativa:true },
+    { nome:"Instalações Elétricas" },
+    { nome:"Cálculo Estrutural" },
+    { nome:"Projetos Complementares" },
+    { nome:"Arquitetura" },
+    { nome:"BIM e Integração de Projetos" },
+    { nome:"Drywall" }
+  ];
+
+  /* Capacidades do Timwin: status "live" (funcional, clicavel) x "soon"
+     (visao de produto, sem logica ainda) x "future" (evolucao, desabilitado).
+     Nao implementar logica nova aqui alem do bypass ja existente para os
+     itens live (mesmo caminho dos STARTERS). */
+  var CAPACIDADES = [
+    { grupo:"Preparação Comercial", itens:[
+        { nome:"Primeira Ligação para Novo Cliente", status:"live", acao:"primeira-ligacao", mensagem:"Vou ligar para um cliente novo." },
+        { nome:"Ligação de Retomada", status:"live", acao:"ligacao-de-retomada", mensagem:"Preciso retomar contato com uma conta." },
+        { nome:"Conferência de Vídeo", status:"soon" },
+        { nome:"Desenvolver Competências Comerciais", status:"soon" }
+    ]},
+    { grupo:"Inteligência Comercial", itens:[
+        { nome:"Construir Estratégia para uma Conta", status:"soon" },
+        { nome:"Definir o Propósito Comercial do Contato", status:"soon" },
+        { nome:"Preparar uma Reunião", status:"soon" },
+        { nome:"Planejar Próximos Passos da Conta", status:"soon" }
+    ]},
+    { grupo:"Evoluções Futuras", itens:[
+        { nome:"Dossiê da Conta", status:"future" },
+        { nome:"Análise de Evidências", status:"future" },
+        { nome:"Histórico da Conta", status:"future" },
+        { nome:"Relatórios Inteligentes", status:"future" }
+    ]}
+  ];
 
   /* Estado da conversa (100% no cliente; o Make e stateless - reenviamos o
      historico a cada chamada da rota "confirmado"). conv pode ser:
@@ -243,6 +364,18 @@
   document.getElementById("trocar-acao").addEventListener("click", function(){ promptTrocarMetodologia(); });
   document.getElementById("newconv").addEventListener("click", function(){ resetConversation(); });
   reportBtn.addEventListener("click", function(){ if(busy) return; gerarRelatorio(); });
+
+  /* Sidebar (Especialidades/Capacidades): coluna fixa no desktop, gaveta
+     recolhivel no mobile (abaixo de 900px), acionada pelo botao de menu. */
+  var sidebar = document.getElementById("sidebar");
+  var sidebarBackdrop = document.getElementById("sidebarBackdrop");
+  var menuBtn = document.getElementById("menubtn");
+  var sidebarClose = document.getElementById("sidebarClose");
+  function openSidebar(){ sidebar.classList.add("open"); sidebarBackdrop.classList.add("open"); }
+  function closeSidebar(){ sidebar.classList.remove("open"); sidebarBackdrop.classList.remove("open"); }
+  menuBtn.addEventListener("click", openSidebar);
+  sidebarClose.addEventListener("click", closeSidebar);
+  sidebarBackdrop.addEventListener("click", closeSidebar);
 
   /* Starters: 1 e 2 pulam a classificacao (vao direto pra rota "confirmado"
      com a metodologia ja definida). 3 e 4 sao abertos: so preenchem o campo
@@ -272,6 +405,50 @@
     });
   }
   renderStarters();
+
+  /* Painel de Especialidades: lista informativa (nao selecionavel), Automacao
+     Industrial marcada como a unica ativa hoje. Painel de Capacidades: os 2
+     itens "live" reaproveitam o bypass ja usado pelos STARTERS; os demais sao
+     so visuais nesta fase, sem logica nova. */
+  function renderSidebarContent(){
+    var discList = document.getElementById("discList");
+    discList.innerHTML = "";
+    DISCIPLINAS.forEach(function(d){
+      var li = document.createElement("li");
+      li.className = "disc-item" + (d.ativa ? " active" : "");
+      li.innerHTML = '<span class="disc-dot"></span><span>' + esc(d.nome) + '</span>' +
+        (d.ativa ? '<span class="tag">ativa</span>' : '');
+      discList.appendChild(li);
+    });
+
+    var capWrap = document.getElementById("capGroups");
+    capWrap.innerHTML = "";
+    CAPACIDADES.forEach(function(g){
+      var box = document.createElement("div");
+      box.className = "cap-group";
+      var h = document.createElement("h4");
+      h.textContent = g.grupo;
+      box.appendChild(h);
+      g.itens.forEach(function(it){
+        var row = document.createElement("div");
+        var isLive = it.status === "live";
+        row.className = "cap-item" + (isLive ? " clickable" : " disabled");
+        var pillClass = isLive ? "live" : (it.status === "soon" ? "soon" : "future");
+        var pillText = isLive ? "Disponível" : (it.status === "soon" ? "Em breve" : "Evolução futura");
+        row.innerHTML = '<span class="name">' + esc(it.nome) + '</span><span class="pill ' + pillClass + '">' + pillText + '</span>';
+        if(isLive){
+          row.onclick = function(){
+            closeSidebar();
+            if(busy) return;
+            sendBypass(it.acao, it.mensagem);
+          };
+        }
+        box.appendChild(row);
+      });
+      capWrap.appendChild(box);
+    });
+  }
+  renderSidebarContent();
 
   function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   function fmt(s){
@@ -352,6 +529,7 @@
     var outra = atual === "primeira-ligacao" ? "ligacao-de-retomada" : "primeira-ligacao";
     renderQuickReplies([
       { label: "Trocar para " + LABELS[outra], onClick: function(){ trocarMetodologia(outra); } },
+      { label: "É Ligação de Aprofundamento", secondary: true, onClick: function(){ pedirAprofundamento(); } },
       { label: "Manter " + LABELS[atual], secondary: true, onClick: function(){} }
     ]);
   }
@@ -359,6 +537,12 @@
     state.acao = novaAcao;
     showAcaoBadge(novaAcao);
     addBubble("Metodologia alterada para " + LABELS[novaAcao] + ". Continuamos a partir daqui.", "bot", false);
+  }
+  /* Ligacao de Aprofundamento ainda nao tem metodologia propria (backlog);
+     por enquanto, encaminha para o Demetrius igual ao fluxo "fora do escopo". */
+  function pedirAprofundamento(){
+    addBubble("Ligação de Aprofundamento ainda está em construção. Vou avisar o Demetrius para te ajudar com esse caso.", "bot", false);
+    escalar();
   }
 
   function resetConversation(){
