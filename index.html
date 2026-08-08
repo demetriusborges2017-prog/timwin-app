@@ -97,7 +97,8 @@
 
   @media (max-width: 900px){
     .sidebar{position:fixed; left:0; top:0; bottom:0; z-index:40; width:86vw; max-width:320px;
-      transform:translateX(-100%); transition:transform .22s ease; box-shadow:2px 0 22px rgba(16,40,62,.2)}
+      transform:translateX(-100%); transition:transform .22s ease; box-shadow:2px 0 22px rgba(16,40,62,.2);
+      overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y}
     .sidebar.open{transform:translateX(0)}
     .sidebar-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
     .sidebar-backdrop.open{display:block; position:fixed; inset:0; background:rgba(16,40,62,.35); z-index:30}
@@ -174,6 +175,7 @@
   footer .fenv{padding:2px 8px;border-radius:12px;background:#f0e2d3;color:#8a5a1f;font-weight:600}
   footer .links{margin-left:auto;display:flex;gap:14px}
   footer .links a{color:var(--muted);text-decoration:none}
+  footer .aidisc{width:100%;font-size:10.5px;color:#9aa5b0;margin-top:4px}
 </style>
 </head>
 <body>
@@ -239,7 +241,7 @@
       <div class="toolbar">
         <span class="acaobadge" id="acaobadge"><span class="dot"></span><span id="acaobadge-text"></span><a id="trocar-acao">trocar</a></span>
         <div class="toolbar-actions">
-          <button class="reportbtn" id="reportbtn" type="button">📄 Gerar Relatório</button>
+          <button class="reportbtn" id="reportbtn" type="button">📄 Gerar Resumo</button>
           <button class="newconv" id="newconv" type="button">Nova conversa</button>
         </div>
       </div>
@@ -293,6 +295,7 @@
         <a href="#" onclick="return false">Ajuda</a>
         <a href="#" onclick="return false">Privacidade</a>
       </span>
+      <span class="aidisc">timwin usa IA e pode errar. Avalie antes de aplicar.</span>
     </div>
   </footer>
 
@@ -651,16 +654,16 @@
     if(state.conv === "idle"){
       callWebhook(
         { estado:"novo", mensagem:text, disciplina:DISCIPLINA },
-        function(txt){ t.remove(); busy=false; input.focus(); handleNovoResponse(txt, text); },
-        function(timedOut){ t.remove(); busy=false; input.focus(); onWebhookError(timedOut); }
+        function(txt){ t.remove(); busy=false; sendBtn.disabled=false; input.focus(); handleNovoResponse(txt, text); },
+        function(timedOut){ t.remove(); busy=false; sendBtn.disabled=false; input.focus(); onWebhookError(timedOut); }
       );
     } else { /* confirmado */
       var acaoAtual = state.acao;
       var historicoAtual = buildHistoricoEnvio();
       callWebhook(
         { estado:"confirmado", acao:acaoAtual, disciplina:DISCIPLINA, mensagem:text, historico:historicoAtual },
-        function(txt){ t.remove(); busy=false; input.focus(); handleConfirmadoResponse(txt, text); },
-        function(timedOut){ t.remove(); busy=false; input.focus(); onWebhookError(timedOut); }
+        function(txt){ t.remove(); busy=false; sendBtn.disabled=false; input.focus(); handleConfirmadoResponse(txt, text); },
+        function(timedOut){ t.remove(); busy=false; sendBtn.disabled=false; input.focus(); onWebhookError(timedOut); }
       );
     }
   }
@@ -846,7 +849,7 @@
     if(busy) return;
     busy = true;
     reportBtn.disabled = true;
-    lockComposer(true, "Gerando relatório...");
+    lockComposer(true, "Gerando resumo...");
     var t = thinkingRow();
     callWebhook(
       { estado:"relatorio", disciplina:DISCIPLINA, acao:state.acao || "", historico:state.historico },
@@ -854,9 +857,9 @@
         t.remove(); busy = false; reportBtn.disabled = false; lockComposer(false);
         var link = (txt || "").trim();
         if(link.indexOf("http") === 0){
-          addBubble('Relatório pronto. <a href="' + esc(link) + '" target="_blank" rel="noopener">Abrir relatório</a>', "bot", true);
+          addBubble('Resumo pronto. <a href="' + esc(link) + '" target="_blank" rel="noopener">Abrir resumo</a>', "bot", true);
         } else {
-          addBubble("Não consegui gerar o relatório agora. Tenta de novo em instantes.", "bot", false);
+          addBubble("Não consegui gerar o resumo agora. Tenta de novo em instantes.", "bot", false);
         }
         input.focus();
       },
