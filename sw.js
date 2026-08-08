@@ -1,11 +1,15 @@
 /* timwin PWA service worker - cache do shell para instalar e abrir offline.
    Nao cacheia o webhook do Make (a resposta e sempre dinamica). */
-var CACHE = "timwin-v3";
+var CACHE = "timwin-v13";
 var SHELL = [
   "./",
   "./index.html",
   "./config.js",
   "./manifest.json",
+  "./favicon.ico",
+  "./favicon-32x32.png",
+  "./favicon-16x16.png",
+  "./apple-touch-icon.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
