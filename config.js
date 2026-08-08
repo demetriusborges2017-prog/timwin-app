@@ -26,11 +26,18 @@
    console.log TEMPORARIO em handleConfirmadoResponse com o texto CRU recebido
    do Make, antes de qualquer parsing - serve so para diagnostico (ver
    AFAZER_ESTRATEGICO_timwin.md e LEIAME secao 6, bloco desta rodada). Remover
-   depois que a causa raiz dos baloes ausentes for confirmada. */
+   depois que a causa raiz dos baloes ausentes for confirmada.
+
+   ATUALIZADO 08/08/2026 (Consolidacao Operacional, cerebro v1.11): Gates
+   Metodologicos + Subgates (vocabulario fechado no ###ESTADO###, sem chamada
+   extra) e Pratica Guiada ao Concluir um Gate. PWA: fix do botao Enviar que
+   ficava desabilitado apos o 1o turno em "confirmado"; fix do scroll do painel
+   lateral no mobile; "Relatorio" renomeado para "Resumo" (botao, mensagens,
+   nome do arquivo exportado no Make); disclaimer discreto de IA no rodape. */
 window.CONFIG = {
   WEBHOOK: "https://hook.us2.make.com/9vcpo34o2scmp4cakjvtb9a5h7k1ugig",
   DISCIPLINA: "automacao-industrial",
   APP_NAME: "timwin",
-  APP_VERSION: "0.8.2",
+  APP_VERSION: "0.9.0",
   TIMEOUT_MS: 40000
 };
